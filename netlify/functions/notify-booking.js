@@ -24,11 +24,19 @@ async function sendSms(to, message, env) {
     `&api_key=${encodeURIComponent(apiKey)}` +
     `&to=${encodeURIComponent(to)}` +
     `&from=${encodeURIComponent(senderId)}` +
-    `&sms=${encodeURIComponent(message)}`;
+    `&sms=${encodeURIComponent(message)}` +
+    `&response=json`;
   try {
     const res = await fetch(url);
-    await res.text();
-    return res.ok;
+    const body = await res.text();
+    let parsed;
+    try {
+      parsed = JSON.parse(body);
+    } catch (parseErr) {
+      console.error('Arkesel response was not valid JSON', parseErr);
+      return false;
+    }
+    return Boolean(parsed) && parsed.code === 'ok';
   } catch (err) {
     console.error('Arkesel send failed', err);
     return false;

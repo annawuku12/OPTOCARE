@@ -43,13 +43,17 @@ test('buildStaffMessage builds a cancellation summary', () => {
   assert.match(msg, /Ama Serwaa/);
 });
 
-test('sendSms returns true when Arkesel responds ok', async () => {
+test('sendSms returns true when Arkesel responds with code "ok"', async () => {
   const originalFetch = global.fetch;
   global.fetch = async (url) => {
     assert.match(url, /^https:\/\/sms\.arkesel\.com\/sms\/api\?action=send-sms/);
     assert.match(url, /to=233244123456/);
     assert.match(url, /from=OPTOCARE/);
-    return { ok: true, text: async () => 'ok' };
+    assert.match(url, /response=json/);
+    return {
+      ok: true,
+      text: async () => JSON.stringify({ code: 'ok', message: 'Successfully Sent', balance: 241 }),
+    };
   };
   try {
     const result = await sendSms('233244123456', 'hello', {
@@ -75,9 +79,23 @@ test('sendSms returns false when the request throws', async () => {
   }
 });
 
-test('sendSms returns false when Arkesel responds not-ok', async () => {
+test('sendSms returns false when Arkesel responds HTTP 200 with a non-ok code (e.g. invalid phone number)', async () => {
   const originalFetch = global.fetch;
-  global.fetch = async () => ({ ok: false, text: async () => 'error' });
+  global.fetch = async () => ({
+    ok: true,
+    text: async () => JSON.stringify({ code: '103', message: '1 invalid Phone Number on your list' }),
+  });
+  try {
+    const result = await sendSms('233244123456', 'hello', { ARKESEL_API_KEY: 'key123' });
+    assert.equal(result, false);
+  } finally {
+    global.fetch = originalFetch;
+  }
+});
+
+test('sendSms returns false without throwing when the response body is not valid JSON', async () => {
+  const originalFetch = global.fetch;
+  global.fetch = async () => ({ ok: true, text: async () => 'not valid json' });
   try {
     const result = await sendSms('233244123456', 'hello', { ARKESEL_API_KEY: 'key123' });
     assert.equal(result, false);
