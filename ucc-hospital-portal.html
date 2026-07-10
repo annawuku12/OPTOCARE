@@ -880,6 +880,24 @@ function autoSMS(type, appt) {
     ref: appt.ref,
   });
   renderSMSLog();
+
+  fetch('/.netlify/functions/notify-booking', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      type,
+      patientPhone: appt.phone,
+      patientMessage: msg,
+      appt: {
+        name: appt.name,
+        doctor: appt.doctor,
+        dept: appt.dept,
+        dateFormatted: appt.dateFormatted,
+        time: appt.time,
+        ref: appt.ref,
+      },
+    }),
+  }).catch((err) => console.error('SMS notify failed', err));
 }
 
 /* ===== NAV ===== */
