@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizePhone, buildStaffMessage, sendSms } = require('./notify-booking');
+const { normalizePhone, buildStaffMessage, sendSms, handler } = require('./notify-booking');
 
 test('normalizePhone converts a leading 0 to the 233 country code', () => {
   assert.equal(normalizePhone('0244123456'), '233244123456');
@@ -102,4 +102,103 @@ test('sendSms returns false without throwing when the response body is not valid
   } finally {
     global.fetch = originalFetch;
   }
+});
+
+test('handler sends to both patient and staff numbers and returns 200', async () => {
+  const originalFetch = global.fetch;
+  const calledUrls = [];
+  global.fetch = async (url) => {
+    calledUrls.push(url);
+    return { ok: true, text: async () => JSON.stringify({ code: 'ok', message: 'Successfully Sent' }) };
+  };
+  process.env.ARKESEL_API_KEY = 'key123';
+  process.env.ARKESEL_SENDER_ID = 'OPTOCARE';
+  process.env.STAFF_PHONE_NUMBER = '0201112222';
+
+  const event = {
+    httpMethod: 'POST',
+    body: JSON.stringify({
+      type: 'confirmation',
+      patientPhone: '+233 24 412 3456',
+      patientMessage: 'UCC Hospital: Your appointment is confirmed...',
+      appt: {
+        name: 'Ama Serwaa',
+        doctor: 'Dr. Ama Asante',
+        dept: 'Optometry',
+        dateFormatted: 'Mon, 14 Jul 2026',
+        time: '10:00 AM',
+        ref: 'UCC-ABC123',
+      },
+    }),
+  };
+
+  try {
+    const res = await handler(event);
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.equal(body.patientSmsSent, true);
+    assert.equal(body.staffSmsSent, true);
+    assert.equal(calledUrls.length, 2);
+  } finally {
+    global.fetch = originalFetch;
+    delete process.env.ARKESEL_API_KEY;
+    delete process.env.ARKESEL_SENDER_ID;
+    delete process.env.STAFF_PHONE_NUMBER;
+  }
+});
+
+test('handler supports a comma-separated STAFF_PHONE_NUMBER list', async () => {
+  const originalFetch = global.fetch;
+  const calledUrls = [];
+  global.fetch = async (url) => {
+    calledUrls.push(url);
+    return { ok: true, text: async () => JSON.stringify({ code: 'ok', message: 'Successfully Sent' }) };
+  };
+  process.env.ARKESEL_API_KEY = 'key123';
+  process.env.STAFF_PHONE_NUMBER = '0201112222, 0203334444';
+
+  const event = {
+    httpMethod: 'POST',
+    body: JSON.stringify({
+      type: 'cancelled',
+      patientPhone: '+233 24 412 3456',
+      patientMessage: 'UCC Hospital: Your appointment has been cancelled.',
+      appt: {
+        name: 'Ama Serwaa',
+        doctor: 'Dr. Ama Asante',
+        dept: 'Optometry',
+        dateFormatted: 'Mon, 14 Jul 2026',
+        time: '10:00 AM',
+        ref: 'UCC-ABC123',
+      },
+    }),
+  };
+
+  try {
+    const res = await handler(event);
+    const body = JSON.parse(res.body);
+    assert.equal(body.staffSmsSent, true);
+    assert.equal(calledUrls.length, 3); // 1 patient + 2 staff
+  } finally {
+    global.fetch = originalFetch;
+    delete process.env.ARKESEL_API_KEY;
+    delete process.env.STAFF_PHONE_NUMBER;
+  }
+});
+
+test('handler returns 400 when required fields are missing', async () => {
+  const event = { httpMethod: 'POST', body: JSON.stringify({ type: 'confirmation' }) };
+  const res = await handler(event);
+  assert.equal(res.statusCode, 400);
+});
+
+test('handler returns 400 for invalid JSON', async () => {
+  const event = { httpMethod: 'POST', body: '{not json' };
+  const res = await handler(event);
+  assert.equal(res.statusCode, 400);
+});
+
+test('handler returns 405 for non-POST requests', async () => {
+  const res = await handler({ httpMethod: 'GET' });
+  assert.equal(res.statusCode, 405);
 });

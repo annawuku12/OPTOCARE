@@ -43,4 +43,42 @@ async function sendSms(to, message, env) {
   }
 }
 
-module.exports = { normalizePhone, buildStaffMessage, sendSms };
+async function handler(event) {
+  if (event.httpMethod !== 'POST') {
+    return { statusCode: 405, body: 'Method Not Allowed' };
+  }
+
+  let payload;
+  try {
+    payload = JSON.parse(event.body || '{}');
+  } catch (err) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Invalid JSON' }) };
+  }
+
+  const { type, patientPhone, patientMessage, appt } = payload;
+  if (!type || !patientPhone || !patientMessage || !appt) {
+    return { statusCode: 400, body: JSON.stringify({ error: 'Missing required fields' }) };
+  }
+
+  const env = process.env;
+  const patientTo = normalizePhone(patientPhone);
+  const patientSmsSent = await sendSms(patientTo, patientMessage, env);
+
+  const staffNumbers = (env.STAFF_PHONE_NUMBER || '')
+    .split(',')
+    .map((n) => n.trim())
+    .filter(Boolean);
+
+  const staffMessage = buildStaffMessage(type, appt);
+  const staffResults = await Promise.all(
+    staffNumbers.map((n) => sendSms(normalizePhone(n), staffMessage, env))
+  );
+  const staffSmsSent = staffResults.length > 0 && staffResults.every(Boolean);
+
+  return {
+    statusCode: 200,
+    body: JSON.stringify({ patientSmsSent, staffSmsSent }),
+  };
+}
+
+module.exports = { normalizePhone, buildStaffMessage, sendSms, handler };
