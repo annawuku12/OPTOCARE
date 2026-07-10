@@ -6,3 +6,8 @@
 
 [build.environment]
   NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/"
+  to = "/everything.html"
+  status = 200
