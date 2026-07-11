@@ -994,8 +994,15 @@ async function handleLogin(e){
     await enterApp();
   } catch (err) {
     buzz([35, 60, 35]);
+    let msg = friendly(err, 'login');
+    // Common slip: typing the password into the username box and vice versa.
+    const idLooksLikePassword = /[A-Z]/.test(idVal) && /\d/.test(idVal) && !/@[a-z0-9-]+\./i.test(idVal);
+    const passLooksLikeUsername = /^[a-z]+\.[a-z]+$/.test(passVal);
+    if (err.status === 401 && idLooksLikePassword && passLooksLikeUsername) {
+      msg = 'It looks like the username and password might be swapped — your username usually looks like "ama.baidoo" and goes in the first box.';
+    }
     $('auth-alert').innerHTML =
-      '<div class="alert alert-error" role="alert">' + ic('alertTri') + '<span>' + esc(friendly(err, 'login')) + '</span></div>';
+      '<div class="alert alert-error" role="alert">' + ic('alertTri') + '<span>' + esc(msg) + '</span></div>';
   } finally {
     btn.classList.remove('loading'); btn.disabled = false;
   }
