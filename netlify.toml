@@ -8,6 +8,12 @@
   NODE_VERSION = "18"
 
 [[redirects]]
+  from = "/api/*"
+  to = "https://optometryapi-production.up.railway.app/:splat"
+  status = 200
+  force = true
+
+[[redirects]]
   from = "/"
   to = "/everything.html"
   status = 200

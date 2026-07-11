@@ -43,6 +43,18 @@ test('buildStaffMessage builds a cancellation summary', () => {
   assert.match(msg, /Ama Serwaa/);
 });
 
+test('buildStaffMessage handles portal bookings with no doctor or time', () => {
+  const appt = {
+    name: 'Adwoa Agyeman',
+    dept: 'Refraction',
+    dateFormatted: 'Fri, 14 Aug 2026',
+    ref: 'OPT-83',
+  };
+  const msg = buildStaffMessage('confirmation', appt);
+  assert.match(msg, /New booking: Adwoa Agyeman for Refraction on Fri, 14 Aug 2026\. Ref: OPT-83\./);
+  assert.doesNotMatch(msg, /undefined/);
+});
+
 test('sendSms returns true when Arkesel responds with code "ok"', async () => {
   const originalFetch = global.fetch;
   global.fetch = async (url) => {

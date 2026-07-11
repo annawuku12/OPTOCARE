@@ -8,10 +8,13 @@ function normalizePhone(rawPhone) {
 }
 
 function buildStaffMessage(type, appt) {
+  // Portal bookings carry no doctor/time — the clinic assigns those later.
+  const who = appt.doctor ? `with ${appt.doctor} (${appt.dept})` : `for ${appt.dept}`;
+  const when = appt.time ? `${appt.dateFormatted} at ${appt.time}` : appt.dateFormatted;
   if (type === 'cancelled') {
-    return `Booking cancelled: ${appt.name} with ${appt.doctor} (${appt.dept}) on ${appt.dateFormatted} at ${appt.time}. Ref: ${appt.ref}.`;
+    return `Booking cancelled: ${appt.name} ${who} on ${when}. Ref: ${appt.ref}.`;
   }
-  return `New booking: ${appt.name} with ${appt.doctor} (${appt.dept}) on ${appt.dateFormatted} at ${appt.time}. Ref: ${appt.ref}.`;
+  return `New booking: ${appt.name} ${who} on ${when}. Ref: ${appt.ref}.`;
 }
 
 const ARKESEL_BASE_URL = 'https://sms.arkesel.com/sms/api';
