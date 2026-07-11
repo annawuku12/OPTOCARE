@@ -1,2 +1,4 @@
 .netlify/
 .env
+node_modules/
+deno.lock

@@ -491,6 +491,7 @@ svg.i{width:20px;height:20px;flex-shrink:0}
 .sms-line svg.i{width:16px;height:16px;margin-top:2px}
 .sms-line.ok{background:var(--green-tint);color:var(--green);border:1px solid var(--green-border)}
 .sms-line.warn{background:var(--gold-tint);color:var(--gold-deep);border:1px solid var(--gold-border)}
+.sms-line.paused{background:var(--blue-tint);color:var(--blue-deep);border:1px solid var(--blue-border)}
 
 /* Upload drop zone */
 .drop{
@@ -537,6 +538,55 @@ svg.i{width:20px;height:20px;flex-shrink:0}
 }
 #offline-banner.show{display:flex}
 #offline-banner svg.i{width:16px;height:16px}
+
+/* ============ ADMIN CONSOLE ============ */
+#view-admin{min-height:100vh;background:var(--paper)}
+.admin-tag{
+  font-family:var(--mono);font-size:.58rem;font-weight:700;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--ink);background:var(--gold);padding:4px 10px;border-radius:var(--r-full);
+}
+.admin-main{max-width:560px;margin:0 auto;padding:2rem 1.15rem 3rem}
+.admin-head{margin-bottom:1.5rem}
+.admin-head h1{font-family:var(--display);font-size:1.7rem;font-weight:700;letter-spacing:-.015em;margin:8px 0 6px}
+.admin-lede{font-size:.9rem;color:var(--t-2);line-height:1.6}
+
+.sms-console{
+  position:relative;overflow:hidden;border-radius:var(--r-lg);padding:1.5rem 1.35rem;
+  border:1px solid var(--line);background:var(--card);box-shadow:var(--sh-md);
+  transition:border-color .3s var(--ease),background .3s var(--ease);
+}
+.sms-console.is-on{border-color:var(--green-border);background:linear-gradient(160deg,var(--green-tint) 0%,#fff 62%)}
+.sms-console.is-off{border-color:var(--gold-border);background:linear-gradient(160deg,var(--gold-tint) 0%,#fff 62%)}
+.console-top{display:flex;align-items:center;gap:14px;margin-bottom:1.3rem}
+.beacon{
+  width:56px;height:56px;border-radius:18px;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+  transition:background .3s var(--ease),box-shadow .3s var(--ease);
+}
+.beacon svg.i{width:26px;height:26px}
+.is-on .beacon{background:linear-gradient(135deg,#0B6B4D,#15A87C);color:#fff;box-shadow:0 6px 18px rgba(13,122,88,.35)}
+.is-off .beacon{background:linear-gradient(135deg,#E8A200,var(--gold));color:var(--ink);box-shadow:0 6px 18px rgba(255,184,28,.4)}
+.console-status{font-family:var(--display);font-size:1.18rem;font-weight:700;line-height:1.25}
+.console-sub{font-size:.85rem;color:var(--t-2);margin-top:3px;line-height:1.5}
+.toggle-row{
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+  background:rgba(255,255,255,.72);border:1px solid var(--line);border-radius:var(--r-md);padding:14px 16px;
+}
+.toggle-label{font-size:.9rem;font-weight:600;color:var(--t-1)}
+.toggle-label small{display:block;font-weight:400;color:var(--t-3);font-size:.76rem;margin-top:2px}
+.switch{position:relative;width:60px;height:34px;flex-shrink:0;border:none;background:#C6CEDC;border-radius:var(--r-full);transition:background .25s var(--ease);padding:0}
+.switch[aria-checked="true"]{background:var(--green)}
+.switch .knob{position:absolute;top:3px;left:3px;width:28px;height:28px;border-radius:50%;background:#fff;box-shadow:0 2px 6px rgba(10,30,63,.28);transition:transform .25s var(--ease)}
+.switch[aria-checked="true"] .knob{transform:translateX(26px)}
+.switch[disabled]{opacity:.55;cursor:progress}
+
+.admin-note{margin-top:1.3rem;border:1px solid var(--line);background:#fff;border-radius:var(--r-md);padding:1.1rem 1.2rem;box-shadow:var(--sh-sm)}
+.admin-note .eyebrow{margin-bottom:9px}
+.admin-note p{font-size:.86rem;color:var(--t-2);line-height:1.6}
+.preview-line{
+  margin-top:11px;display:flex;gap:9px;align-items:flex-start;background:var(--blue-tint);border:1px solid var(--blue-border);
+  border-radius:var(--r-sm);padding:11px 13px;font-size:.82rem;color:var(--blue-deep);line-height:1.5;
+}
+.preview-line svg.i{width:16px;height:16px;margin-top:2px;flex-shrink:0}
 </style>
 </head>
 <body>
@@ -690,6 +740,35 @@ svg.i{width:20px;height:20px;flex-shrink:0}
   </nav>
 </div>
 
+<!-- ============ ADMIN CONSOLE ============ -->
+<div id="view-admin" class="hidden">
+  <header class="topbar">
+    <div class="topbar-brand">
+      <div class="brand-mark" id="brand-mark-slot-3"></div>
+      OPTOCARE
+    </div>
+    <span class="admin-tag">Clinic admin</span>
+    <div class="topbar-spacer"></div>
+    <button class="icon-btn" id="admin-logout-btn" aria-label="Sign out" title="Sign out"></button>
+  </header>
+
+  <main class="admin-main">
+    <div class="admin-head">
+      <p class="eyebrow" id="admin-eyebrow"></p>
+      <h1>SMS confirmations</h1>
+      <p class="admin-lede">Turn patient and staff text messages on or off for the whole clinic. Changes take effect straight away — no need to redeploy.</p>
+    </div>
+
+    <div class="sms-console" id="sms-console"></div>
+
+    <div class="admin-note">
+      <p class="eyebrow" id="admin-note-eyebrow"></p>
+      <p>While texts are paused, patients can still book — their appointment is saved and shows on your schedule. They simply see this note instead of a text, so it's clear it was switched off on purpose:</p>
+      <div class="preview-line" id="admin-preview-line"></div>
+    </div>
+  </main>
+</div>
+
 <!-- BOOKING SHEET -->
 <div class="sheet-overlay" id="book-overlay" role="dialog" aria-modal="true" aria-labelledby="book-title">
   <div class="sheet">
@@ -751,6 +830,9 @@ const I = {
   activity:'<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>',
   info:'<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
   notepad:'<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
+  bell:'<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  bellOff:'<path d="M8.7 3A6 6 0 0 1 18 8c0 1.9.4 3.4.9 4.5"/><path d="M17 17H3s3-2 3-9a5.9 5.9 0 0 1 .3-1.9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/><line x1="1" y1="1" x2="23" y2="23"/>',
+  sliders:'<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
 };
 function ic(name, cls){ return '<svg class="i'+(cls?' '+cls:'')+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+(I[name]||I.info)+'</svg>'; }
 
@@ -766,6 +848,11 @@ document.addEventListener('pointerdown', e => {
 const API = '/api';
 const CLINIC_PHONE = '0332 090 000';
 const LS_ACCESS = 'oc_access', LS_REFRESH = 'oc_refresh';
+
+/* Clinic admin — signs in with this email to reach the SMS on/off console.
+   The email is just a routing hint; the password is checked on the server, never here. */
+const ADMIN_EMAIL = 'leunammeyetten@gmail.com';
+const admin = { authed: false, password: null, enabled: true, busy: false };
 
 const S = {
   access: localStorage.getItem(LS_ACCESS) || null,
@@ -942,12 +1029,14 @@ function clearTokens(){
 /* ============ AUTH FLOW ============ */
 function showAuth(noticeHtml){
   $('view-app').classList.add('hidden');
+  $('view-admin').classList.add('hidden');
   $('view-auth').classList.remove('hidden');
   $('auth-alert').innerHTML = noticeHtml || '';
   window.scrollTo(0, 0);
 }
 function showApp(){
   $('view-auth').classList.add('hidden');
+  $('view-admin').classList.add('hidden');
   $('view-app').classList.remove('hidden');
   window.scrollTo(0, 0);
 }
@@ -984,6 +1073,12 @@ async function handleLogin(e){
   setFieldError('login-pass', 'err-login-pass', passVal ? '' : 'Enter your password.');
   if (!idVal || !passVal) return;
 
+  // Clinic admin sign-in → SMS control console (kept separate from patient records).
+  if (idVal.toLowerCase() === ADMIN_EMAIL) {
+    await handleAdminLogin(idVal, passVal);
+    return;
+  }
+
   const btn = $('login-btn');
   btn.classList.add('loading'); btn.disabled = true;
   try {
@@ -1006,6 +1101,119 @@ async function handleLogin(e){
   } finally {
     btn.classList.remove('loading'); btn.disabled = false;
   }
+}
+
+/* ============ ADMIN: SMS CONSOLE ============ */
+async function smsControl(body){
+  let res;
+  try {
+    res = await fetch('/.netlify/functions/sms-control', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+  } catch (e) {
+    throw new ApiError('network', 0);
+  }
+  const data = await res.json().catch(() => ({}));
+  return { status: res.status, data };
+}
+
+async function handleAdminLogin(email, password){
+  const btn = $('login-btn');
+  btn.classList.add('loading'); btn.disabled = true;
+  try {
+    const { status, data } = await smsControl({ action: 'login', email, password });
+    if (status === 200 && data.ok) {
+      admin.authed = true;
+      admin.password = password;
+      admin.enabled = data.enabled !== false;
+      $('login-pass').value = '';
+      buzz([10, 40, 14]);
+      enterAdmin();
+    } else if (status === 401) {
+      buzz([35, 60, 35]);
+      $('auth-alert').innerHTML = '<div class="alert alert-error" role="alert">' + ic('alertTri') +
+        '<span>That admin password isn\'t right. Check it and try again.</span></div>';
+    } else {
+      throw new ApiError('http', status);
+    }
+  } catch (err) {
+    buzz([35, 60, 35]);
+    $('auth-alert').innerHTML = '<div class="alert alert-error" role="alert">' + ic('alertTri') +
+      '<span>' + esc(friendly(err)) + '</span></div>';
+  } finally {
+    btn.classList.remove('loading'); btn.disabled = false;
+  }
+}
+
+function enterAdmin(){
+  $('view-auth').classList.add('hidden');
+  $('view-app').classList.add('hidden');
+  $('view-admin').classList.remove('hidden');
+  window.scrollTo(0, 0);
+  $('admin-eyebrow').innerHTML = ic('sliders') + 'Notification controls';
+  $('admin-note-eyebrow').innerHTML = ic('info') + 'What patients see when paused';
+  $('admin-preview-line').innerHTML = ic('info') +
+    '<span>Text confirmations are paused by the clinic right now, so no SMS was sent for this booking. Your visit is still saved.</span>';
+  renderAdminConsole();
+}
+
+function renderAdminConsole(){
+  const on = admin.enabled;
+  const box = $('sms-console');
+  box.className = 'sms-console ' + (on ? 'is-on' : 'is-off');
+  box.innerHTML =
+    '<div class="console-top">' +
+      '<div class="beacon">' + ic(on ? 'bell' : 'bellOff') + '</div>' +
+      '<div>' +
+        '<div class="console-status">' + (on ? 'Text messages are ON' : 'Text messages are PAUSED') + '</div>' +
+        '<div class="console-sub">' + (on
+          ? 'Patients and staff get booking confirmations by SMS.'
+          : 'No confirmation texts are being sent to anyone right now.') + '</div>' +
+      '</div>' +
+    '</div>' +
+    '<div class="toggle-row">' +
+      '<div class="toggle-label">Send SMS confirmations' +
+        '<small>' + (on ? 'Tap to pause all texts' : 'Tap to switch texts back on') + '</small></div>' +
+      '<button class="switch" id="sms-switch" role="switch" aria-checked="' + on + '" aria-label="Toggle SMS confirmations">' +
+        '<span class="knob"></span></button>' +
+    '</div>';
+  $('sms-switch').addEventListener('click', toggleSms);
+}
+
+async function toggleSms(){
+  if (admin.busy) return;
+  admin.busy = true;
+  const target = !admin.enabled;
+  const sw = $('sms-switch');
+  if (sw) { sw.disabled = true; sw.setAttribute('aria-checked', String(target)); }  // optimistic
+  buzz(target ? [10, 40, 14] : 18);
+  try {
+    const { status, data } = await smsControl({ action: 'set', email: ADMIN_EMAIL, password: admin.password, enabled: target });
+    if (status === 200 && data.ok) {
+      admin.enabled = data.enabled;
+      renderAdminConsole();
+      toast(admin.enabled ? 'SMS confirmations switched on.' : 'SMS confirmations paused.', 'success');
+    } else if (status === 401) {
+      toast('Your admin session ended. Please sign in again.', 'error');
+      adminSignOut();
+    } else {
+      throw new ApiError('http', status, data && data.error);
+    }
+  } catch (err) {
+    toast(friendly(err), 'error');
+    renderAdminConsole();  // revert the optimistic switch
+  } finally {
+    admin.busy = false;
+  }
+}
+
+function adminSignOut(){
+  admin.authed = false;
+  admin.password = null;
+  admin.busy = false;
+  showAuth('<div class="alert alert-success">' + ic('checkCircle') + '<span>You\'ve been signed out of the admin console.</span></div>');
 }
 
 /* ============ APP BOOT & DATA LOADING ============ */
@@ -1401,6 +1609,7 @@ async function sendBookingSms(appt){
     });
     if (!res.ok) return { sent: false };
     const body = await res.json().catch(() => ({}));
+    if (body.disabled) return { sent: false, disabled: true };
     return { sent: Boolean(body.patientSmsSent) };
   } catch {
     return { sent: false };
@@ -1421,7 +1630,9 @@ function renderBookSuccess(appt, sms){
         '<div class="sum-row"><span class="sum-k">Status</span><span class="sum-v">' + esc(appt.status) + '</span></div>' +
         '<div class="sum-row"><span class="sum-k">Reference</span><span class="sum-v mono">OPT-' + esc(appt.id) + '</span></div>' +
       '</div>' +
-      (sms.sent
+      (sms.disabled
+        ? '<div class="sms-line paused">' + ic('info') + '<span>Text confirmations are paused by the clinic right now, so no SMS was sent for this booking. Your visit is still saved and the clinic can see it.</span></div>'
+        : sms.sent
         ? '<div class="sms-line ok">' + ic('message') + '<span>A text confirmation is on its way to ' + esc(S.me.primary_phone) + '.</span></div>'
         : '<div class="sms-line warn">' + ic('alertTri') + '<span>Your booking is saved, but the text confirmation couldn\'t be sent right now.</span></div>') +
       '<button class="btn btn-primary btn-full" onclick="closeSheet(\'book\'); switchTab(\'appointments\')">View my appointments</button>' +
@@ -1551,8 +1762,10 @@ window.addEventListener('offline', updateOnline);
 function injectStaticIcons(){
   $('brand-mark-slot').innerHTML = ic('eye');
   $('brand-mark-slot-2').innerHTML = ic('eye');
+  $('brand-mark-slot-3').innerHTML = ic('eye');
   $('peek-btn').innerHTML = ic('eye');
   $('logout-btn').innerHTML = ic('logout');
+  $('admin-logout-btn').innerHTML = ic('logout');
   $('qa-book').innerHTML = ic('calendarPlus') + 'Book an appointment';
   $('qa-labs').innerHTML = ic('flask') + 'View lab tests';
   $('appt-book-btn').innerHTML = ic('plus') + 'Book';
@@ -1584,6 +1797,7 @@ function wireEvents(){
     setFieldError('login-pass','err-login-pass','');
   }));
   $('logout-btn').addEventListener('click', () => signOut('manual'));
+  $('admin-logout-btn').addEventListener('click', adminSignOut);
   document.querySelectorAll('.nav-item[data-tab],.dtab').forEach(b =>
     b.addEventListener('click', () => switchTab(b.dataset.tab)));
   $('nav-book').addEventListener('click', openBooking);

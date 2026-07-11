@@ -1,6 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizePhone, buildStaffMessage, sendSms, handler } = require('../netlify/functions/notify-booking');
+const notify = require('../netlify/functions/notify-booking');
+const { normalizePhone, buildStaffMessage, sendSms, handler } = notify;
 
 test('normalizePhone converts a leading 0 to the 233 country code', () => {
   assert.equal(normalizePhone('0244123456'), '233244123456');
@@ -213,4 +214,70 @@ test('handler returns 400 for invalid JSON', async () => {
 test('handler returns 405 for non-POST requests', async () => {
   const res = await handler({ httpMethod: 'GET' });
   assert.equal(res.statusCode, 405);
+});
+
+test('handler skips Arkesel and reports disabled when SMS is switched off', async () => {
+  const originalFetch = global.fetch;
+  const originalFlag = notify.isSmsEnabled;
+  let fetchCalled = false;
+  global.fetch = async () => { fetchCalled = true; return { ok: true, text: async () => '{}' }; };
+  notify.isSmsEnabled = async () => false;
+  process.env.ARKESEL_API_KEY = 'key123';
+  process.env.STAFF_PHONE_NUMBER = '0201112222';
+
+  const event = {
+    httpMethod: 'POST',
+    body: JSON.stringify({
+      type: 'confirmation',
+      patientPhone: '0244123456',
+      patientMessage: 'OPTOCARE: your booking...',
+      appt: { name: 'Adwoa Agyeman', dept: 'Refraction', dateFormatted: 'Fri, 14 Aug 2026', ref: 'OPT-90' },
+    }),
+  };
+
+  try {
+    const res = await handler(event);
+    assert.equal(res.statusCode, 200);
+    const body = JSON.parse(res.body);
+    assert.equal(body.disabled, true);
+    assert.equal(body.patientSmsSent, false);
+    assert.equal(body.staffSmsSent, false);
+    assert.equal(fetchCalled, false); // no text was ever sent to Arkesel
+  } finally {
+    global.fetch = originalFetch;
+    notify.isSmsEnabled = originalFlag;
+    delete process.env.ARKESEL_API_KEY;
+    delete process.env.STAFF_PHONE_NUMBER;
+  }
+});
+
+test('handler sends normally when SMS is switched on', async () => {
+  const originalFetch = global.fetch;
+  const originalFlag = notify.isSmsEnabled;
+  const urls = [];
+  global.fetch = async (u) => { urls.push(u); return { ok: true, text: async () => JSON.stringify({ code: 'ok' }) }; };
+  notify.isSmsEnabled = async () => true;
+  process.env.ARKESEL_API_KEY = 'key123';
+
+  const event = {
+    httpMethod: 'POST',
+    body: JSON.stringify({
+      type: 'confirmation',
+      patientPhone: '0244123456',
+      patientMessage: 'OPTOCARE: your booking...',
+      appt: { name: 'Adwoa Agyeman', dept: 'Refraction', dateFormatted: 'Fri, 14 Aug 2026', ref: 'OPT-90' },
+    }),
+  };
+
+  try {
+    const res = await handler(event);
+    const body = JSON.parse(res.body);
+    assert.equal(res.statusCode, 200);
+    assert.equal(body.patientSmsSent, true);
+    assert.equal(urls.length, 1); // patient only (no staff numbers configured)
+  } finally {
+    global.fetch = originalFetch;
+    notify.isSmsEnabled = originalFlag;
+    delete process.env.ARKESEL_API_KEY;
+  }
 });

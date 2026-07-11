@@ -19,8 +19,28 @@ reach the handset until that sender ID is approved. Register a sender ID in the 
 dashboard (Settings → Sender IDs) as soon as possible — testing before approval may
 show "sent" but not actually deliver.
 
-Run the function's unit tests locally with:
+## SMS on/off switch (clinic admin)
+
+There is a live kill-switch so the clinic can pause all patient/staff texts (e.g. before
+launch, to stop abuse) without a redeploy. The state lives in Netlify Blobs (store
+`optocare-settings`, key `sms-enabled`) and is enforced server-side in
+`notify-booking.js`, so pausing genuinely stops sends — it is not just a UI change.
+
+- **To reach it:** open the portal and sign in with the admin email (`ADMIN_EMAIL`) and
+  its password. Instead of a patient record you get the SMS console with a single on/off
+  switch. Changes take effect immediately.
+- **When paused:** bookings still succeed and appear on the clinic schedule; the patient
+  simply sees a clear "text confirmations are paused by the clinic" note instead of an SMS.
+- **Auth:** the admin password is checked server-side in `netlify/functions/sms-control.js`
+  against env vars — it is never present in the browser code.
+
+Set these in the Netlify dashboard (never commit real values):
+
+- `ADMIN_EMAIL` — the clinic admin's sign-in email.
+- `ADMIN_PASSWORD` — the clinic admin's password.
+
+Run the function unit tests locally with:
 
 ```bash
-node --test tests/notify-booking.test.js
+npm test        # runs node --test over tests/*.test.js
 ```

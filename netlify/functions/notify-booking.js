@@ -1,5 +1,35 @@
 'use strict';
 
+const { getStore } = require('@netlify/blobs');
+
+/* Shared with sms-control.js — the single source of truth for whether texts go out.
+   Stored in Netlify Blobs so the admin toggle takes effect instantly, with no redeploy. */
+const SETTINGS_STORE = 'optocare-settings';
+const SMS_FLAG_KEY = 'sms-enabled';
+
+/* On the Netlify runtime, getStore(name) picks up the site's Blobs context automatically.
+   Locally (or anywhere that context is absent), fall back to explicit siteID/token from env
+   so the same code path can be exercised. In production these vars are unset → auto context. */
+function settingsStore() {
+  const siteID = process.env.NETLIFY_SITE_ID || process.env.SITE_ID;
+  const token = process.env.NETLIFY_BLOBS_TOKEN || process.env.NETLIFY_API_TOKEN;
+  if (siteID && token) return getStore({ name: SETTINGS_STORE, siteID, token });
+  return getStore(SETTINGS_STORE);
+}
+
+async function isSmsEnabled() {
+  try {
+    const store = settingsStore();
+    const val = await store.get(SMS_FLAG_KEY);
+    // Unset = enabled (normal running state). Only an explicit "false" pauses texts.
+    return val === null || val === undefined ? true : val === 'true';
+  } catch (err) {
+    // If the store can't be read, fail open so real bookings still get their text.
+    console.error('Could not read SMS toggle state; defaulting to enabled', err);
+    return true;
+  }
+}
+
 function normalizePhone(rawPhone) {
   const digits = String(rawPhone).replace(/\D/g, '');
   if (digits.startsWith('233')) return digits;
@@ -63,6 +93,15 @@ async function handler(event) {
     return { statusCode: 400, body: JSON.stringify({ error: 'Missing required fields' }) };
   }
 
+  // Admin kill-switch: when SMS is paused, save nothing to Arkesel and tell the caller
+  // it was intentional (not a delivery failure) so the UI can word it clearly.
+  if (!(await module.exports.isSmsEnabled())) {
+    return {
+      statusCode: 200,
+      body: JSON.stringify({ disabled: true, patientSmsSent: false, staffSmsSent: false }),
+    };
+  }
+
   const env = process.env;
   const patientTo = normalizePhone(patientPhone);
   const patientSmsSent = await sendSms(patientTo, patientMessage, env);
@@ -84,4 +123,4 @@ async function handler(event) {
   };
 }
 
-module.exports = { normalizePhone, buildStaffMessage, sendSms, handler };
+module.exports = { normalizePhone, buildStaffMessage, sendSms, isSmsEnabled, handler };
