@@ -39,6 +39,18 @@ Set these in the Netlify dashboard (never commit real values):
 - `ADMIN_EMAIL` — the clinic admin's sign-in email.
 - `ADMIN_PASSWORD` — the clinic admin's password.
 
+**Netlify Blobs access:** this site is deployed manually via the CLI and its functions do
+**not** receive Netlify's auto-injected Blobs context, so the store must be reached with an
+explicit site ID + token. These are set as env vars and read by the `settingsStore()` helper
+in both functions (which prefer explicit config, then fall back to the auto context if present):
+
+- `NETLIFY_SITE_ID` — this site's ID.
+- `NETLIFY_BLOBS_TOKEN` — a Netlify token with access to the site's Blobs (the deploy PAT works).
+
+If the SMS switch ever reports "Could not save the setting", these two vars are the first
+thing to check — a missing token makes writes throw `MissingBlobsEnvironmentError` while
+reads silently fall back to "enabled".
+
 Run the function unit tests locally with:
 
 ```bash
