@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { normalizePhone, buildStaffMessage, sendSms, handler } = require('./notify-booking');
+const { normalizePhone, buildStaffMessage, sendSms, handler } = require('../netlify/functions/notify-booking');
 
 test('normalizePhone converts a leading 0 to the 233 country code', () => {
   assert.equal(normalizePhone('0244123456'), '233244123456');

@@ -22,5 +22,5 @@ show "sent" but not actually deliver.
 Run the function's unit tests locally with:
 
 ```bash
-node --test netlify/functions/notify-booking.test.js
+node --test tests/notify-booking.test.js
 ```
