@@ -1,13 +1,6 @@
 /* ===== DATA ===== */
 const DEPARTMENTS = [
   { id: 'optometry',   name: 'Optometry',   icon: '👁️', doctors: ['Dr. Ama Asante', 'Dr. Kweku Boateng', 'Dr. Efua Mensah'] },
-  { id: 'general',     name: 'General OPD', icon: '🏥', doctors: ['Dr. Yaw Darko', 'Dr. Abena Owusu'] },
-  { id: 'cardiology',  name: 'Cardiology',  icon: '❤️', doctors: ['Dr. Kofi Acheampong', 'Dr. Nana Adjoa'] },
-  { id: 'dental',      name: 'Dental',      icon: '🦷', doctors: ['Dr. Akua Appiah', 'Dr. Kwame Frimpong'] },
-  { id: 'gynecology',  name: 'Gynecology',  icon: '🌸', doctors: ['Dr. Adwoa Sarpong', 'Dr. Esi Amoah'] },
-  { id: 'pediatrics',  name: 'Pediatrics',  icon: '👶', doctors: ['Dr. Kwabena Asare', 'Dr. Afia Mensah'] },
-  { id: 'orthopedics', name: 'Orthopedics', icon: '🦴', doctors: ['Dr. Nii Adjei', 'Dr. Yaa Bonsu'] },
-  { id: 'laboratory',  name: 'Laboratory',  icon: '🔬', doctors: ['Dr. Kojo Antwi', 'Dr. Akosua Dankwa'] },
 ];
 
 const TIME_SLOTS = [
@@ -67,35 +60,18 @@ function autoSMS(type, appt) {
     ref: appt.ref,
   });
   renderSMSLog();
-
-  fetch('/.netlify/functions/notify-booking', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      type,
-      patientPhone: appt.phone,
-      patientMessage: msg,
-      appt: {
-        name: appt.name,
-        doctor: appt.doctor,
-        dept: appt.dept,
-        dateFormatted: appt.dateFormatted,
-        time: appt.time,
-        ref: appt.ref,
-      },
-    }),
-  }).catch((err) => console.error('SMS notify failed', err));
 }
 
 /* ===== NAV ===== */
-function enterPortal() {
+function enterPortal(tab = 'book') {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-patient').classList.add('active');
-  renderDeptGrid();
+  autoSetDept();
   initDateInput();
   refreshPatientAppointments();
   refreshUploadApptLink();
   renderSMSLog();
+  showTab(tab);
   window.scrollTo(0, 0);
 }
 
@@ -119,22 +95,14 @@ function showTab(tab) {
 }
 
 /* ===== BOOKING ===== */
-function renderDeptGrid() {
-  document.getElementById('dept-grid').innerHTML = DEPARTMENTS.map(d => `
-    <div class="dept-item" id="dept-${d.id}" onclick="selectDept('${d.id}')">
-      <span class="dept-icon">${d.icon}</span>
-      <span class="dept-name">${d.name}</span>
-    </div>`).join('');
-}
+let assignedDoctor = null;
+let doctorTurn = 0; // used to rotate doctors round-robin
 
-function selectDept(id) {
-  selectedDept = DEPARTMENTS.find(d => d.id === id);
-  document.querySelectorAll('.dept-item').forEach(el => el.classList.remove('selected'));
-  document.getElementById('dept-' + id).classList.add('selected');
-  const docSel = document.getElementById('p-doctor');
-  docSel.innerHTML = selectedDept.doctors.map(d => `<option>${d}</option>`).join('');
-  document.getElementById('doctor-group').style.display = 'block';
-  document.getElementById('reason-group').style.display = 'block';
+// Every booking is automatically Optometry — no department or doctor picker needed.
+function autoSetDept() {
+  selectedDept = DEPARTMENTS.find(d => d.id === 'optometry');
+  assignedDoctor = selectedDept.doctors[doctorTurn % selectedDept.doctors.length];
+  doctorTurn++;
 }
 
 function initDateInput() {
@@ -166,7 +134,7 @@ function selectSlot(time, el) {
   el.classList.add('selected');
 }
 
-function nextStep(step) { if (!validateStep(step)) return; goToStep(step + 1); if (step + 1 === 4) buildConfirmSummary(); }
+function nextStep(step) { if (!validateStep(step)) return; goToStep(step + 1); if (step + 1 === 3) buildConfirmSummary(); }
 function prevStep(step) { goToStep(step - 1); }
 function goToStep(n) {
   document.querySelectorAll('.form-step').forEach(s => s.classList.remove('active'));
@@ -186,8 +154,7 @@ function validateStep(step) {
     if (!document.getElementById('p-gender').value) { showToast('Please select your gender', 'error'); return false; }
     return true;
   }
-  if (step === 2) { if (!selectedDept) { showToast('Please select a department', 'error'); return false; } return true; }
-  if (step === 3) {
+  if (step === 2) {
     if (!document.getElementById('p-date').value) { showToast('Please select a date', 'error'); return false; }
     if (!selectedSlot) { showToast('Please select a time slot', 'error'); return false; }
     return true;
@@ -198,7 +165,7 @@ function validateStep(step) {
 function buildConfirmSummary() {
   const name = document.getElementById('p-name').value.trim();
   const phone = '+233 ' + document.getElementById('p-phone').value.trim();
-  const doctor = document.getElementById('p-doctor').value;
+  const doctor = assignedDoctor;
   const date = formatDate(document.getElementById('p-date').value);
   const reason = document.getElementById('p-reason').value.trim() || 'Not specified';
   document.getElementById('confirm-summary').innerHTML = `
@@ -221,7 +188,7 @@ function confirmBooking() {
     phone: '+233 ' + document.getElementById('p-phone').value.trim(),
     patientId: document.getElementById('p-id').value.trim() || ref,
     dept: selectedDept.name, deptId: selectedDept.id,
-    doctor: document.getElementById('p-doctor').value,
+    doctor: assignedDoctor,
     date: document.getElementById('p-date').value,
     dateFormatted: formatDate(document.getElementById('p-date').value),
     time: selectedSlot,
@@ -260,16 +227,13 @@ function confirmBooking() {
 }
 
 function resetBookingForm() {
-  currentStep = 1; selectedDept = null; selectedSlot = null;
+  currentStep = 1; selectedSlot = null;
   goToStep(1);
   ['p-name','p-age','p-phone','p-id','p-reason'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-  ['p-gender','p-doctor'].forEach(id => { const el = document.getElementById(id); if (el) el.selectedIndex = 0; });
+  ['p-gender'].forEach(id => { const el = document.getElementById(id); if (el) el.selectedIndex = 0; });
   document.getElementById('p-date').value = '';
   document.getElementById('time-slots').innerHTML = '<p class="slots-hint">Select a date to see available slots</p>';
-  document.getElementById('doctor-group').style.display = 'none';
-  document.getElementById('reason-group').style.display = 'none';
-  document.querySelectorAll('.dept-item').forEach(el => el.classList.remove('selected'));
-  renderDeptGrid();
+  autoSetDept();
 }
 
 /* ===== APPOINTMENTS LIST ===== */
