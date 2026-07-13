@@ -105,32 +105,29 @@ body {
   margin-bottom: 2.5rem; line-height: 1.7;
 }
 
-.enter-btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 10px;
-  background: var(--gold); color: var(--blue-dark);
-  font-family: var(--font); font-size: 1rem; font-weight: 700;
-  padding: 16px 36px; border-radius: 50px; border: none;
-  cursor: pointer; transition: var(--transition);
-  box-shadow: 0 4px 20px rgba(255,184,28,0.35);
-  width: 100%;
+.landing-nav {
+  display: grid; grid-template-columns: repeat(2,1fr);
+  gap: 12px; margin-top: 1rem;
 }
-.enter-btn:hover { background: #ffc83a; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(255,184,28,0.4); }
-.enter-btn svg { width: 20px; height: 20px; }
-
-.landing-features {
-  display: grid; grid-template-columns: repeat(3,1fr);
-  gap: 12px; margin-top: 2rem;
-}
-.landing-feat {
+.landing-nav-card {
+  display: flex; flex-direction: column; align-items: center; gap: 6px;
   background: rgba(255,255,255,0.08);
   border: 1px solid rgba(255,255,255,0.15);
   border-radius: var(--radius-md);
-  padding: 1rem 0.75rem;
+  padding: 1.25rem 0.75rem;
   backdrop-filter: blur(6px);
   text-align: center;
+  cursor: pointer;
+  font-family: var(--font);
+  transition: var(--transition);
 }
-.feat-icon { font-size: 1.5rem; display: block; margin-bottom: 4px; }
-.feat-label { font-size: 0.72rem; color: rgba(255,255,255,0.75); font-weight: 500; }
+.landing-nav-card:hover {
+  background: rgba(255,184,28,0.16);
+  border-color: rgba(255,184,28,0.4);
+  transform: translateY(-2px);
+}
+.feat-icon { font-size: 1.5rem; display: block; }
+.feat-label { font-size: 0.85rem; color: rgba(255,255,255,0.9); font-weight: 600; }
 
 /* ===== HEADER ===== */
 .app-header {
@@ -497,7 +494,6 @@ body {
   .tab-btn { min-width: 70px; font-size: 0.65rem; }
   .appt-actions { flex-direction: column; }
   .appt-actions .btn { width: 100%; justify-content: center; }
-  .landing-features { grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
 }
 @media (min-width: 640px) {
   .tab-content { padding: 2rem 1.5rem 4rem; }
