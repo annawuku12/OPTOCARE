@@ -26,25 +26,17 @@
           <span class="logo-sub">University of Cape Coast</span>
         </div>
       </div>
-      <h1 class="landing-title">Patient Appointment<br/>Portal</h1>
-      <p class="landing-desc">Book appointments, upload test reports, and receive automatic SMS confirmations — all in one place.</p>
-      <button class="enter-btn" onclick="enterPortal()">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
-        Enter Patient Portal
-      </button>
-      <div class="landing-features">
-        <div class="landing-feat">
+      <h1 class="landing-title">UCC Hospital</h1>
+      <p class="landing-desc">Book appointments and upload your test reports — all in one place.</p>
+      <div class="landing-nav">
+        <button class="landing-nav-card" onclick="enterPortal('book')">
           <span class="feat-icon">📅</span>
           <span class="feat-label">Book Appointments</span>
-        </div>
-        <div class="landing-feat">
-          <span class="feat-icon">📱</span>
-          <span class="feat-label">Auto SMS Alerts</span>
-        </div>
-        <div class="landing-feat">
+        </button>
+        <button class="landing-nav-card" onclick="enterPortal('upload')">
           <span class="feat-icon">📄</span>
           <span class="feat-label">Upload Reports</span>
-        </div>
+        </button>
       </div>
     </div>
   </div>
@@ -102,11 +94,9 @@
         <div class="steps">
           <div class="step active" id="step-1-ind"><div class="step-dot">1</div><span>Your Info</span></div>
           <div class="step-line"></div>
-          <div class="step" id="step-2-ind"><div class="step-dot">2</div><span>Department</span></div>
+          <div class="step" id="step-2-ind"><div class="step-dot">2</div><span>Date & Time</span></div>
           <div class="step-line"></div>
-          <div class="step" id="step-3-ind"><div class="step-dot">3</div><span>Date & Time</span></div>
-          <div class="step-line"></div>
-          <div class="step" id="step-4-ind"><div class="step-dot">4</div><span>Confirm</span></div>
+          <div class="step" id="step-3-ind"><div class="step-dot">3</div><span>Confirm</span></div>
         </div>
 
         <!-- Step 1 -->
@@ -145,13 +135,15 @@
 
         <!-- Step 2 -->
         <div id="step-2" class="form-step">
-          <h3>Select Department & Doctor</h3>
-          <div class="dept-grid" id="dept-grid"></div>
-          <div class="form-group" id="doctor-group" style="display:none">
-            <label>Available Doctors</label>
-            <select id="p-doctor"></select>
+          <h3>Pick a Date & Time</h3>
+          <div class="form-group">
+            <label>Appointment Date</label>
+            <input type="date" id="p-date" />
           </div>
-          <div class="form-group" id="reason-group" style="display:none">
+          <div class="time-slots" id="time-slots">
+            <p class="slots-hint">Select a date to see available slots</p>
+          </div>
+          <div class="form-group">
             <label>Reason for Visit</label>
             <textarea id="p-reason" rows="3" placeholder="Briefly describe your symptoms or reason for visiting..."></textarea>
           </div>
@@ -163,22 +155,6 @@
 
         <!-- Step 3 -->
         <div id="step-3" class="form-step">
-          <h3>Pick a Date & Time</h3>
-          <div class="form-group">
-            <label>Appointment Date</label>
-            <input type="date" id="p-date" />
-          </div>
-          <div class="time-slots" id="time-slots">
-            <p class="slots-hint">Select a date to see available slots</p>
-          </div>
-          <div class="form-nav">
-            <button class="btn btn-outline" onclick="prevStep(3)">← Back</button>
-            <button class="btn btn-primary" onclick="nextStep(3)">Continue →</button>
-          </div>
-        </div>
-
-        <!-- Step 4 -->
-        <div id="step-4" class="form-step">
           <h3>Confirm Appointment</h3>
           <div class="confirm-card" id="confirm-summary"></div>
           <div class="sms-notice">
@@ -186,7 +162,7 @@
             SMS confirmation will be sent automatically to your phone.
           </div>
           <div class="form-nav">
-            <button class="btn btn-outline" onclick="prevStep(4)">← Back</button>
+            <button class="btn btn-outline" onclick="prevStep(3)">← Back</button>
             <button class="btn btn-primary" onclick="confirmBooking()">Confirm Booking ✓</button>
           </div>
         </div>
